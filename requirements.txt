@@ -1,0 +1,138 @@
+
+# ============================================================
+# CORE LANGCHAIN
+# ============================================================
+
+langchain
+langchain-core
+langchain-community
+langchain-text-splitters
+
+
+# ============================================================
+# LANGCHAIN MODEL PROVIDERS
+# ============================================================
+
+# Google Gemini
+langchain-google-genai
+
+# Mistral AI
+langchain-mistralai
+
+
+# ============================================================
+# VECTOR DATABASES
+# ============================================================
+
+# ChromaDB - Local / Development Vector Database
+chromadb
+langchain-chroma
+
+# Pinecone - Cloud Vector Database
+pinecone
+langchain-pinecone
+
+
+# ============================================================
+# EMBEDDINGS
+# ============================================================
+
+# Hugging Face embeddings
+sentence-transformers
+langchain-huggingface
+
+# Hugging Face ecosystem
+transformers
+huggingface-hub
+
+
+# ============================================================
+# DOCUMENT LOADERS
+# ============================================================
+
+# PDF documents
+pypdf
+
+# DOCX documents
+python-docx
+
+# Excel files
+openpyxl
+
+# CSV files
+pandas
+
+# HTML / Web pages
+beautifulsoup4
+
+# Markdown
+markdown
+
+
+# ============================================================
+# GENERAL FILE / TEXT PROCESSING
+# ============================================================
+
+python-dotenv
+
+
+# ============================================================
+# API / BACKEND
+# ============================================================
+
+fastapi
+uvicorn[standard]
+
+
+# ============================================================
+# DATA VALIDATION / CONFIGURATION
+# ============================================================
+
+pydantic
+pydantic-settings
+
+
+# ============================================================
+# HTTP / NETWORKING
+# ============================================================
+
+httpx
+requests
+
+
+# ============================================================
+# NUMERICAL / ML DEPENDENCIES
+# ============================================================
+
+numpy
+
+
+# ============================================================
+# OPTIONAL: TOKENIZATION
+# ============================================================
+
+tiktoken
+
+
+# ============================================================
+# OPTIONAL: JUPYTER / EXPERIMENTATION
+# ============================================================
+
+jupyter
+ipykernel
+
+
+# ============================================================
+# DEVELOPMENT / TESTING
+# ============================================================
+
+pytest
+pytest-asyncio
+
+
+# ============================================================
+# OPTIONAL: OBSERVABILITY
+# ============================================================
+
+langsmith
+

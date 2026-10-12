@@ -1,0 +1,39 @@
+[project]
+name = "multi-ai-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "SheikhSahil26", email = "sahil.sheikh@esparkbizmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.20.0",
+    "fastapi>=0.141.1",
+    "langchain-core>=1.6.4",
+    "langchain-chroma>=1.1.0",
+    "langchain-huggingface>=1.2.2",
+    "sentence-transformers>=6.1.0",
+    "langchain-ollama>=1.1.0",
+    "langchain-text-splitters>=1.1.2",
+    "langgraph>=1.2.12",
+    "psycopg[binary]>=3.3.6",
+    "pwdlib[argon2]>=0.3.1",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.3",
+    "sqlalchemy>=2.0.54",
+    "uvicorn[standard]>=0.53.0",
+]
+
+[project.scripts]
+multi-ai-agent = "multi_ai_agent:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "langgraph-cli[inmem]>=0.4.31",
+    "pytest>=9.1.1",
+]

@@ -1,0 +1,11 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "ecommerce_agent": "ecommerce_ai.graph.graph:app_graph",
+    "order_agent": "ecommerce_ai.graph.graph:order_agent_graph",
+    "shopping_agent": "ecommerce_ai.graph.graph:shopping_agent_graph",
+    "support_agent": "ecommerce_ai.graph.graph:support_agent_graph",
+    "unknown_agent": "ecommerce_ai.graph.graph:unknown_agent_graph"
+  },
+  "env": ".env"
+}
