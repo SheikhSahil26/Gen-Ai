@@ -3,8 +3,8 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ecommerce_ai.api.dependencies import get_db_session
-from ecommerce_ai.auth.user_context import get_user_id
+from ecommerce_ai.api.dependencies import get_current_user, get_db_session
+from ecommerce_ai.models.user import User
 from ecommerce_ai.repositories.order_repository import OrderRepository
 from ecommerce_ai.repositories.product_repository import ProductRepository
 from ecommerce_ai.repositories.shopping_repository import ShoppingRepository
@@ -17,12 +17,13 @@ router = APIRouter(tags=["Commerce"])
 @router.get("/cart")
 async def get_cart(
     session: AsyncSession = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     service = ShoppingService(
         repository=ShoppingRepository(session),
         product_repository=ProductRepository(session),
     )
-    items = await service.get_cart(user_id=get_user_id())
+    items = await service.get_cart(user_id=user.id)
     subtotal = sum((Decimal(item["line_total"]) for item in items), Decimal("0.00"))
     discount = sum((Decimal(item["discount_total"]) for item in items), Decimal("0.00"))
     total = sum((Decimal(item["total_after_discount"]) for item in items), Decimal("0.00"))
@@ -41,10 +42,11 @@ async def get_cart(
 async def get_orders(
     limit: int = Query(default=20, ge=1, le=50),
     session: AsyncSession = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     service = OrderService(repository=OrderRepository(session))
     history = await service.get_order_history(
-        user_id=get_user_id(),
+        user_id=user.id,
         limit=limit,
     )
     return {

@@ -2,16 +2,15 @@ import { useEffect, useRef, useState } from "react"
 import { api } from "../api/client"
 import { isAwaitingCheckoutApproval } from "../utils/checkout"
 
-const STORAGE_KEY = "common-goods-chat-v1"
 const welcome = {
   id: "welcome",
   role: "assistant",
   content: "Hi there. Tell me what you’re looking for and I’ll help you find it. I can also help with your cart, orders, and checkout.",
 }
 
-function readSavedChat() {
+function readSavedChat(storageKey) {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null")
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "null")
     return saved?.messages?.length ? saved : { messages: [welcome], conversationId: null }
   } catch {
     return { messages: [welcome], conversationId: null }
@@ -22,8 +21,9 @@ function makeId() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-export function useChat() {
-  const [saved] = useState(readSavedChat)
+export function useChat(userId) {
+  const storageKey = `common-goods-chat-v1:${userId}`
+  const [saved] = useState(() => readSavedChat(storageKey))
   const [messages, setMessages] = useState(saved.messages)
   const [conversationId, setConversationId] = useState(saved.conversationId)
   const [busy, setBusy] = useState(false)
@@ -31,10 +31,10 @@ export function useChat() {
   const scrollRef = useRef(null)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, conversationId }))
+    localStorage.setItem(storageKey, JSON.stringify({ messages, conversationId }))
     const scroller = scrollRef.current
     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" })
-  }, [messages, conversationId, busy])
+  }, [messages, conversationId, busy, storageKey])
 
   async function send(rawMessage) {
     const message = rawMessage.trim()
@@ -68,7 +68,7 @@ export function useChat() {
     setMessages(fresh)
     setConversationId(null)
     setError("")
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(storageKey)
   }
 
   return { messages, conversationId, busy, error, scrollRef, send, reset, clearError: () => setError("") }

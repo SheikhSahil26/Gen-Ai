@@ -17,7 +17,7 @@ def create_product_agent(
     )
 
     model = ChatOllama(
-        model="gpt-oss:120b-cloud",
+        model="gpt-oss:120b-cloud", 
         temperature=0,
     )
 

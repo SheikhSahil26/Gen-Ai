@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ecommerce_ai.models.base import Base
@@ -23,6 +23,19 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_users_username_normalized",
+            func.lower(func.trim(username)),
+            unique=True,
+        ),
+        Index(
+            "uq_users_email_normalized",
+            func.lower(func.trim(email)),
+            unique=True,
+        ),
     )
 
     hashed_password: Mapped[str] = mapped_column(

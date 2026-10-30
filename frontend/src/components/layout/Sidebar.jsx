@@ -1,7 +1,7 @@
-import { Clock3, Headphones, Leaf, Plus, Sparkles } from "lucide-react"
+import { Clock3, Headphones, Leaf, LogOut, Plus, Sparkles } from "lucide-react"
 import { BrandMark } from "../shared/BrandMark"
 
-export function Sidebar({ recentQueries, onNewChat, onSelectRecent, onSupport }) {
+export function Sidebar({ user, onLogout, recentQueries, onNewChat, onSelectRecent, onSupport }) {
   return <aside className="sidebar">
     <button className="brand" onClick={onNewChat} aria-label="Common Goods home">
       <BrandMark/><span className="brand-name">common<span>goods</span></span>
@@ -16,7 +16,7 @@ export function Sidebar({ recentQueries, onNewChat, onSelectRecent, onSupport })
     </section>}
     <div className="sidebar-bottom">
       <div className="promise-card"><span className="promise-icon"><Leaf size={16}/></span><div><strong>Thoughtfully chosen</strong><span>Better finds, fewer tabs.</span></div></div>
-      <div className="guest-profile"><span className="guest-avatar">G</span><div><strong>Guest shopper</strong><span>Here for the good stuff</span></div><span className="guest-chevron">⌄</span></div>
+      <div className="guest-profile"><span className="guest-avatar">{user?.username?.[0]?.toUpperCase() || "U"}</span><div><strong>{user?.username || "Shopper"}</strong><span>{user?.email}</span></div><button className="logout-button" onClick={onLogout} aria-label="Sign out" title="Sign out"><LogOut size={15}/></button></div>
     </div>
   </aside>
 }

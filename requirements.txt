@@ -28,6 +28,10 @@ langchain-mistralai
 chromadb
 langchain-chroma
 
+# Qdrant - Hosted / Production Vector Database
+qdrant-client
+langchain-qdrant
+
 # Pinecone - Cloud Vector Database
 pinecone
 langchain-pinecone

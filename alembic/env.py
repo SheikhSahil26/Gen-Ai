@@ -71,7 +71,10 @@ def run_migrations_online() -> None:
     import asyncio
 
     asyncio.run(
-        run_async_migrations()
+        run_async_migrations(),
+        # Psycopg's async driver does not support Windows' default
+        # ProactorEventLoop. SelectorEventLoop works on Windows and POSIX.
+        loop_factory=asyncio.SelectorEventLoop,
     )
 
 

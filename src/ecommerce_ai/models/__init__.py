@@ -1,6 +1,7 @@
 from ecommerce_ai.models.base import Base
 
 from ecommerce_ai.models.user import User
+from ecommerce_ai.models.auth_session import AuthSession
 
 from ecommerce_ai.models.product import (
     Category,
@@ -37,6 +38,7 @@ from ecommerce_ai.models.support import (
 __all__ = [
     "Base",
     "User",
+    "AuthSession",
     "Category",
     "Product",
     "ProductVariant",
