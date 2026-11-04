@@ -2,7 +2,7 @@ from typing import Literal
 import json
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_ollama import ChatOllama
+from ecommerce_ai.llm import create_chat_model
 from pydantic import BaseModel, Field
 
 
@@ -201,10 +201,7 @@ class IntentClassifier:
 
     def __init__(self):
 
-        self.model = ChatOllama(
-            model="gpt-oss:120b-cloud",
-            temperature=0,
-        )
+        self.model = create_chat_model(temperature=0)
 
     # ========================================================
     # Rule-Based Classification

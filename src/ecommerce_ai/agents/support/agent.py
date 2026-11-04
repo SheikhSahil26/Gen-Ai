@@ -1,4 +1,4 @@
-from langchain_ollama import ChatOllama
+from ecommerce_ai.llm import create_chat_model
 
 from ecommerce_ai.agents.support.graph import (
     create_support_graph,
@@ -7,10 +7,7 @@ from ecommerce_ai.agents.support.graph import (
 
 def create_support_agent():
 
-    model = ChatOllama(
-        model="gpt-oss:120b-cloud",
-        temperature=0,
-    )
+    model = create_chat_model(temperature=0)
 
     return create_support_graph(
         model=model,

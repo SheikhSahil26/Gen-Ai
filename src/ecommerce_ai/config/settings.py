@@ -7,9 +7,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str
     qdrant_url: str = "http://localhost:6333"
-    qdrant_api_key: str = ""
+    qdrant_api_key: str = Field(default="", validation_alias="QDRANT_API_KEY")
     qdrant_collection: str = "ecommerce_support"
     auth_cookie_secure: bool = True
+    frontend_url: str = Field(default="", validation_alias="FRONTEND_URL")
+    ollama_api_key: str = Field(default="", validation_alias="OLLAMA_API_KEY")
+    ollama_base_url: str = "https://ollama.com/v1"
+    ollama_model: str = "gpt-oss:120b-cloud"
     langsmith_tracing: bool = Field(
         default=True,
         validation_alias=AliasChoices("LANGSMITH_TRACING", "LANGCHAIN_TRACING_V2"),
@@ -32,6 +36,16 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+        if self.frontend_url:
+            origins.append(self.frontend_url.rstrip("/"))
+        return origins
 
     def configure_langsmith(self) -> None:
         # Respect explicit process environment values; otherwise apply values

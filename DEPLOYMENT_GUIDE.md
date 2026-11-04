@@ -27,9 +27,9 @@ flowchart LR
 
 ## Read this before making it public
 
-The current app is a demo, not a store ready for real customer data:
+The current app is a portfolio demo, not a store ready for real customer data:
 
-- `src/ecommerce_ai/auth/user_context.py` returns user ID `1` for every visitor. Anyone who can use a public deployment shares that demo identity, cart, and order history. Use only synthetic data and describe the site as a shared demo until real authentication and per-user authorization are implemented.
+- Email/password registration, Argon2 password hashes, opaque database-backed sessions, and authenticated-user checks for chat/cart/orders have been implemented. The auth schema migration has been applied to the local database. Before deployment, apply it to the isolated hosted database and verify registration/login/logout and cross-account data isolation there. Password reset, email verification, rate limiting, and broader security review are still outstanding.
 - `InMemorySaver` stores LangGraph conversation checkpoints in the API process. Restarts clear them; multiple API instances do not share them. Use one API instance for the first demo and expect conversations to reset after a restart or redeploy.
 - The health endpoint only confirms that FastAPI responds. It does not test PostgreSQL, Qdrant, or the model.
 - The Qdrant collection must exist and contain documents before the API starts. The migration script below creates/populates it from the local Chroma database.
@@ -50,25 +50,25 @@ The source tree has no Dockerfile or Render Blueprint right now, so this guide u
 
 ## Step 2 — Make the model reachable from the deployed API
 
-All current agents construct `ChatOllama(model="gpt-oss:120b-cloud", ...)` without a remote base URL. In deployment, this points at an Ollama server inside the Render service (normally `localhost:11434`), where no Ollama server is installed. The code will fail on the first chat request even if it works on your laptop.
+The model clients now use a shared `ChatOpenAI` factory pointed at Ollama Cloud. The previous `ChatOllama` implementation reached Ollama Cloud in local development but depended on local Ollama sign-in and had no explicit API key configuration for Render.
 
-For this deployment, use the Ollama Cloud API with its OpenAI-compatible endpoint. Ollama documents `https://ollama.com/v1` as the cloud OpenAI-compatible base URL and requires a cloud API key. [Ollama API introduction](https://github.com/ollama/ollama/blob/main/docs/api/introduction.mdx)
+For this deployment, use the Ollama Cloud API with its OpenAI-compatible endpoint. `ChatOllama` currently sends `gpt-oss:120b-cloud` requests to Ollama Cloud from local development, but Render needs an explicit cloud API key and base URL. Ollama documents `https://ollama.com/v1` as the OpenAI-compatible base URL and requires a cloud API key. [Ollama Cloud models](https://ollama.com/blog/cloud-models), [Ollama API introduction](https://github.com/ollama/ollama/blob/main/docs/api/introduction.mdx)
 
-Before deployment, make a small model-provider change:
+Before deployment, configure and verify the model provider:
 
-1. Add the LangChain OpenAI-compatible client dependency: `uv add langchain-openai`.
-2. Add a shared model factory (for example, `src/ecommerce_ai/llm.py`) that creates the configured chat model using `ChatOpenAI`, `base_url="https://ollama.com/v1"`, `api_key` from the environment, and model name `gpt-oss:120b-cloud`.
-3. Use that factory in `classifiers/intent_classifier.py` and the product, shopping, order, support, and unknown agents instead of constructing `ChatOllama` directly. Those agents need async invocation, and the commerce agents need tool calling, so confirm the selected Ollama model supports both through the compatibility API.
-4. Run the classifier and one tool-using agent locally against the cloud API before proceeding.
-5. Add the API key to Render as `OLLAMA_API_KEY`. Do not commit it or expose it in a Vite variable.
+1. The project now includes `langchain-openai` in `pyproject.toml`, `uv.lock`, and `requirements.txt`.
+2. The shared `src/ecommerce_ai/llm.py` factory uses `ChatOpenAI`, `https://ollama.com/v1`, `OLLAMA_API_KEY`, and `gpt-oss:120b-cloud` by default. The classifier and product, shopping, order, support, and unknown agents use this factory.
+3. Create an Ollama Cloud API key and add it to the ignored local `.env` as `OLLAMA_API_KEY=...`. Never commit the key or expose it in a Vite variable.
+4. Run `uv run python scripts/check_ollama_cloud.py` locally. It checks a classifier response and tool-call compatibility. Proceed only after both checks pass; the earlier 502 means cloud availability should be confirmed again.
+5. Add the same API key to Render as `OLLAMA_API_KEY` when configuring the backend environment.
 
-This is a required application change for a Render deployment. Do not deploy first and expect the local Ollama process on your PC to be reachable from Render.
+This explicit cloud configuration is required for Render. Do not expect Render to use the Ollama sign-in session on your PC.
 
 ## Step 3 — Create the managed PostgreSQL database
 
-1. Create a Supabase project in a region near the API service.
-2. In the database connection panel, copy a connection string suitable for a persistent backend. Supabase recommends a direct connection for a persistent backend when its network supports it; its session pooler is the alternative for an IPv4-only backend. Use the actual URL Supabase supplies rather than constructing the pooler hostname yourself. [Supabase connection guide](https://supabase.com/docs/guides/database/connecting-to-postgres)
-3. Convert the scheme to the driver this app expects if necessary. The app uses Psycopg 3; it expects `postgresql+psycopg://...` (not a browser/frontend URL or Supabase anon key).
+1. Create a Supabase project in a region near the API service. For a recruiter demo, the Free plan is sufficient, but Supabase may pause Free projects after a week of low activity; use a paid plan if the deployed demo must remain continuously available. [Supabase project pausing](https://supabase.com/docs/guides/platform/free-project-pausing)
+2. In the database connection panel, choose **Session pooler** and copy the supplied connection string. Render does not support outbound IPv6, while Supabase's direct connection is IPv6-only unless the project has its IPv4 add-on. The shared session pooler supports IPv4 and preserves session behavior for this long-running API. Use the exact host, username, and port Supabase supplies; do not construct the pooler hostname yourself. [Supabase connection guide](https://supabase.com/docs/guides/database/connecting-to-postgres), [Render and Supabase connection guide](https://render.com/articles/how-to-connect-a-render-service-to-supabase-postgres)
+3. Convert only the URL scheme to the driver this app expects: `postgresql+psycopg://`. Keep the pooler host, username, password, port, and database copied from Supabase. Add `sslmode=require` if the supplied string does not already require TLS.
 4. Keep the password private. You will enter the URL in Render's backend environment settings.
 
 Do not expose the database port publicly if the provider offers network restrictions. Use TLS and take a backup before any schema changes.
@@ -78,14 +78,23 @@ Do not expose the database port publicly if the provider offers network restrict
 The schema is managed by Alembic. The first migration is in `alembic/versions/`.
 
 1. Create an isolated database for this demo, not a database with real user data.
-2. From the project root, set `DATABASE_URL` in a temporary PowerShell session to the new database URL and run:
+2. From the project root, enter the Supabase Session pooler URL into a temporary PowerShell session. This avoids putting the secret directly in the command text/history and leaves your local `.env` unchanged:
 
    ```powershell
-   $env:DATABASE_URL = "postgresql+psycopg://USER:PASSWORD@HOST:PORT/DATABASE"
+   $remoteDatabaseUrl = Read-Host "Paste Supabase Session pooler URL"
+   $remoteDatabaseUrl = $remoteDatabaseUrl -replace '^postgres(?:ql)?://', 'postgresql+psycopg://'
+   if ($remoteDatabaseUrl -notmatch '[?&]sslmode=') {
+       if ($remoteDatabaseUrl.Contains('?')) { $remoteDatabaseUrl += '&sslmode=require' }
+       else { $remoteDatabaseUrl += '?sslmode=require' }
+   }
+   $env:DATABASE_URL = $remoteDatabaseUrl
    uv run alembic upgrade head
+   if ($LASTEXITCODE -eq 0) { uv run alembic current }
+   Remove-Item Env:DATABASE_URL
+   Remove-Variable remoteDatabaseUrl
    ```
 
-3. If you want demo catalog/orders, run the seed script only against this disposable database:
+3. Confirm `alembic current` reports the latest revision before proceeding. If you want demo catalog/orders, run the seed script only against this disposable database:
 
    ```powershell
    uv run python scripts/seed.py
@@ -160,6 +169,9 @@ If the collection has not been populated, use a one-time indexing script built f
    | `QDRANT_API_KEY` | Qdrant Cloud secret key |
    | `QDRANT_COLLECTION` | The collection populated in Step 5, e.g. `ecommerce_support` |
    | `OLLAMA_API_KEY` | The Ollama Cloud key used by your model factory |
+   | `OLLAMA_BASE_URL` | `https://ollama.com/v1` unless you use another compatible endpoint |
+   | `OLLAMA_MODEL` | `gpt-oss:120b-cloud` unless you select another compatible model |
+   | `AUTH_COOKIE_SECURE` | `true` for Render's HTTPS service |
    | `LANGSMITH_TRACING` | `false` unless you intentionally configure LangSmith |
    | `LANGSMITH_API_KEY` | Optional; only if tracing is enabled |
    | `LANGSMITH_PROJECT` | Optional project label, e.g. `common-goods-demo` |
@@ -212,7 +224,7 @@ Use only synthetic demo records. Check in this order:
 - Add the live frontend URL and backend API/docs links to the original README or portfolio page (do not replace existing project documentation).
 - Include a short screen recording showing product search, cart, checkout confirmation, order lookup, and policy support.
 - Add a visible “Demo data only” label and sample prompts.
-- Explain the architecture and limitations honestly: shared demo identity, in-memory chat checkpoint, Qdrant Cloud support retrieval, and no real payment provider.
+- Explain the architecture and limitations honestly: basic account authentication, in-memory chat checkpoint, Qdrant Cloud support retrieval, and no real payment provider.
 - Keep a staging/demo database separate from any personal or production data.
 - Review service usage and billing after the first day. Hosted LLM calls and managed compute/database plans may incur charges.
 
@@ -220,7 +232,7 @@ Use only synthetic demo records. Check in this order:
 
 This deployment is production-shaped infrastructure suitable for a portfolio demo. Do not call it ready for real shoppers until you have implemented and verified at least:
 
-1. Authentication plus per-user authorization (replace the fixed user ID).
+1. Complete auth security work such as email verification, password recovery, login rate limiting, account lifecycle controls, and cross-account access verification.
 2. Persistent LangGraph checkpoints (PostgreSQL saver or another shared store).
 3. A repeatable support-policy indexing process, with clear update/version handling for the Qdrant collection.
 4. Dependency-aware readiness checks and request/error monitoring.

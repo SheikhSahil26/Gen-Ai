@@ -19,6 +19,9 @@ langchain-google-genai
 # Mistral AI
 langchain-mistralai
 
+# Ollama Cloud via its OpenAI-compatible API
+langchain-openai
+
 
 # ============================================================
 # VECTOR DATABASES

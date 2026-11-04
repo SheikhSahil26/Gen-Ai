@@ -6,15 +6,10 @@ from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ecommerce_ai.auth.sessions import SESSION_COOKIE, hash_session_token, utc_now
+from ecommerce_ai.config.settings import settings
 from ecommerce_ai.db.database import AsyncSessionLocal
 from ecommerce_ai.models.user import User
 from ecommerce_ai.repositories.auth_repository import AuthRepository
-
-ALLOWED_FRONTEND_ORIGINS = {
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-}
-
 
 async def get_db_session() -> AsyncIterator[AsyncSession]:
     async with AsyncSessionLocal() as session:
@@ -22,7 +17,7 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
 
 
 async def require_request_origin(origin: str | None = Header(default=None)) -> None:
-    if origin not in ALLOWED_FRONTEND_ORIGINS:
+    if origin not in settings.allowed_origins:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Request origin is not allowed.",
@@ -56,6 +51,11 @@ conversation_checkpointer = InMemorySaver()
 
 
 async def get_main_graph() -> AsyncIterator[CompiledStateGraph]:
+    if not settings.ollama_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Chat is unavailable until OLLAMA_API_KEY is configured.",
+        )
     # Import after settings have loaded so provider and LangSmith configuration
     # is established before agent models are constructed.
     from ecommerce_ai.graph.graph import build_graph

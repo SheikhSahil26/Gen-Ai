@@ -1,5 +1,4 @@
-from langchain_ollama import ChatOllama
-
+from ecommerce_ai.llm import create_chat_model
 from ecommerce_ai.repositories.product_repository import (
     ProductRepository,
 )
@@ -16,10 +15,7 @@ def create_product_agent(
         repository
     )
 
-    model = ChatOllama(
-        model="gpt-oss:120b-cloud", 
-        temperature=0,
-    )
+    model = create_chat_model(temperature=0)
 
     model_with_tools = model.bind_tools(
         tools

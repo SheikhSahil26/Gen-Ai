@@ -9,6 +9,8 @@ wheels/
 # Virtual environments
 .venv
 .venv/
+.venv*/
+data/chroma/
 __pycache__/
 *.pyc
 .env
