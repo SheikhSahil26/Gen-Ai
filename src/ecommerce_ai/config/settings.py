@@ -44,7 +44,10 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5173",
         ]
         if self.frontend_url:
-            origins.append(self.frontend_url.rstrip("/"))
+            for item in self.frontend_url.split(","):
+                clean_item = item.strip().rstrip("/")
+                if clean_item and clean_item not in origins:
+                    origins.append(clean_item)
         return origins
 
     def configure_langsmith(self) -> None:

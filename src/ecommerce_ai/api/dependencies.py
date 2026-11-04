@@ -1,3 +1,4 @@
+import re
 from collections.abc import AsyncIterator
 
 from fastapi import Cookie, Depends, Header, HTTPException, status
@@ -16,8 +17,18 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
         yield session
 
 
+def is_allowed_origin(origin: str | None) -> bool:
+    if not origin:
+        return False
+    if origin in settings.allowed_origins:
+        return True
+    if re.match(r"^https://[a-zA-Z0-9_\-.]+\.vercel\.app$", origin):
+        return True
+    return False
+
+
 async def require_request_origin(origin: str | None = Header(default=None)) -> None:
-    if origin not in settings.allowed_origins:
+    if not is_allowed_origin(origin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Request origin is not allowed.",
