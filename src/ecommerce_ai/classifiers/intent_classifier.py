@@ -1,4 +1,5 @@
 from typing import Literal
+import asyncio
 import json
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -213,6 +214,20 @@ class IntentClassifier:
     ) -> IntentClassification | None:
 
         text = text.lower().strip()
+
+        # Fast path for common greetings / casual messages
+        clean_text = "".join(c for c in text if c.isalnum() or c.isspace()).strip()
+        greetings = {
+            "hi", "hello", "hey", "hey there", "hi there", "hello there",
+            "good morning", "good afternoon", "good evening", "howdy",
+            "sup", "whats up", "what is up", "help", "who are you",
+            "what can you do", "hi bot", "hello bot",
+        }
+        if clean_text in greetings:
+            return IntentClassification(
+                intents=["unknown"],
+                confidence=0.99,
+            )
 
         detected_intents: list[Intent] = []
 
@@ -454,18 +469,27 @@ class IntentClassifier:
             "[INTENT] LLM classification"
         )
 
-        response = await self.model.ainvoke(
-            [
-                SystemMessage(
-                    content=INTENT_CLASSIFICATION_PROMPT
+        try:
+            response = await asyncio.wait_for(
+                self.model.ainvoke(
+                    [
+                        SystemMessage(
+                            content=INTENT_CLASSIFICATION_PROMPT
+                        ),
+                        HumanMessage(
+                            content=text
+                        ),
+                    ]
                 ),
-                HumanMessage(
-                    content=text
-                ),
-            ]
-        )
-
-        raw_output = response.content
+                timeout=30.0,
+            )
+            raw_output = response.content
+        except Exception as exc:
+            print(f"[INTENT] LLM call failed or timed out: {exc}")
+            return IntentClassification(
+                intents=["unknown"],
+                confidence=0.5,
+            )
 
         print(
             "[INTENT] Raw LLM output:\n"

@@ -12,4 +12,6 @@ def create_chat_model(*, temperature: float = 0) -> ChatOpenAI:
         base_url=settings.ollama_base_url,
         api_key=settings.ollama_api_key,
         temperature=temperature,
+        timeout=40.0,
+        max_retries=1,
     )
