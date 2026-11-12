@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://multi-ai-agent-d75r.onrender.com/api/v1/:path*"
+    }
+  ]
+}

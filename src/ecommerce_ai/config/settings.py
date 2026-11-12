@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     qdrant_api_key: str = Field(default="", validation_alias="QDRANT_API_KEY")
     qdrant_collection: str = "ecommerce_support"
     auth_cookie_secure: bool = True
+    auth_cookie_samesite: str = Field(default="none", validation_alias="AUTH_COOKIE_SAMESITE")
     frontend_url: str = Field(default="", validation_alias="FRONTEND_URL")
     ollama_api_key: str = Field(default="", validation_alias="OLLAMA_API_KEY")
     ollama_base_url: str = "https://ollama.com/v1"
@@ -36,6 +37,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def cookie_samesite(self) -> str:
+        # SameSite=None requires Secure=True in modern browsers (Chrome/Firefox/Safari)
+        if not self.auth_cookie_secure:
+            return "lax"
+        return self.auth_cookie_samesite.lower()
 
     @property
     def allowed_origins(self) -> list[str]:
